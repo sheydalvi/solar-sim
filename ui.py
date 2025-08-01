@@ -126,19 +126,6 @@ for i, para in enumerate(doc.paragraphs):
         break
 
 
-# --- SM ---
-
-# uploaded_SM = st.file_uploader("Upload .ssdat file", type=['ssdat'])
-
-# if uploaded_SM is not None:
-#     result_SM = sudatImport(uploaded_SM)
-#     st.write(result_SM)
-# else:
-#     st.write("upload the file")
-
-# SM_report = SMScript(result_SM)
-
-
 # --- Choice Inputs ---
 silicons = ["high gain", "low gain", "no silicon"]
 igas = ["high gain", "low gain", "no in gas"]
@@ -149,6 +136,25 @@ st.header("Spectrometry Analysis")
 silicon = st.selectbox("First Choice", silicons)
 iga = st.selectbox("First Choice", igas)
 standard = st.selectbox("First Choice", standards)
+
+# --- SM ---
+
+uploaded_SM = st.file_uploader("Upload .ssdat file", type=['ssdat'])
+
+if uploaded_SM:
+    result_SM = ssdatImport(uploaded_SM) 
+    st.success("Files successfully parsed.")
+
+    # Display parsed info (optional)
+    # for key, value in result_TI.items():
+    #     st.subheader(value['filename'])
+    #     st.write(value)
+
+    # Optional: Call your analysis
+    SM_report = SMScript(result_SM)
+    st.write("Results:", SM_report)
+
+
 
 
 # --- Graphs ---
