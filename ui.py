@@ -31,7 +31,16 @@ uploaded_NU = st.file_uploader("Upload .sudat file", type=['sudat'])
 
 if uploaded_NU is not None:
     result_NU = sudatImport(uploaded_NU)
-    st.write(result_NU)
+    st.success("Files successfully parsed.")
+
+    # Display parsed info (optional)
+    # for key, value in result_TI.items():
+    #     st.subheader(value['filename'])
+    #     st.write(value)
+
+    # Optional: Call your analysis
+    NU_report = NUScript(result_NU)
+    st.write("Results:", NU_report)
 else:
     st.write("upload the file")
 
@@ -79,13 +88,13 @@ if uploaded_TI:
     st.success("Files successfully parsed.")
 
     # Display parsed info (optional)
-    for key, value in result_TI.items():
-        st.subheader(value['filename'])
-        st.write(value)
+    # for key, value in result_TI.items():
+    #     st.subheader(value['filename'])
+    #     st.write(value)
 
     # Optional: Call your analysis
     TI_report = TIScript(result_TI)
-    st.write("Simulation Results:", TI_report)
+    st.write("Results:", TI_report)
 
 
 # TABLE

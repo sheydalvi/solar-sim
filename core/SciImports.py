@@ -14,8 +14,6 @@ import math
 import pandas as pd
 import io
 
-import pandas as pd
-import io
 
 def ivdatImports(uploaded_files):
     """
