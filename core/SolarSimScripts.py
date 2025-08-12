@@ -172,6 +172,8 @@ def TIScript(tiData):
     plt.xlabel('Time [s]')
     plt.ylabel('Irradiance [Suns]')
     plt.savefig("output/TI.png")
+    plt.clf() 
+
 
 
     # Display information for the test report formatted as a convenient table
@@ -191,7 +193,7 @@ def TIScript(tiData):
     # print(tabulate(resultsFrame, colalign = ('right',)))
     return report_d
 
-def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
+def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, crosspoint):
     '''
     specScript: This function take a single .ssdat file from the spectroradiometer as input, calculates its degree of matching to a given solar spectrum, then outputs the results along with a plot for the test report.
     '''
@@ -258,9 +260,7 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
         plt.plot(irrad_IGA['irradWaves'], irrad_IGA['irrad'], label = 'InGaAs Data')
         plt.xlabel('Wavlength [nm]')
         plt.ylabel('Spectral Irradiance [W/cm^2/nm]')
-        
-        crosspoint = int(input('\n Enter the wavelength value to use as the crossover point:\n'))   # This will usually be 1100
-        
+                
         # trim the Si data
         trimmedIndices_Si = np.where(irrad_Si['irradWaves'] <= crosspoint)[0]
         trimmedWaves_Si = irrad_Si['irradWaves'][trimmedIndices_Si]
@@ -655,7 +655,7 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
     plotInterper = interpolate.interp1d(waves, irrad)
     plt1y = plotInterper(plt1x)
     plt1y = plt1y / sum(plt1y) * sum(normFactor)    # Normalize the data to overlap with SMARTS standard data
-    dataLabel = input('Enter a label for the solar simulator to be used on the graph. (i.e. SciSun300 SN0003700):\n')
+    dataLabel = label
     
     # Subplots
     ax1 = plt.subplot2grid((2, 2), (0, 0), colspan = 2)
@@ -699,8 +699,12 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
     table.set_fontsize(5)
     table.auto_set_column_width(col = list(range(len(tableDF.columns))))
     plt.tight_layout()
-    plt.savefig("output/SM2.png")
+    plt.savefig("output/SM.png", dpi=300)
     
+    # classification
+    grade_order = ['A+', 'A', 'B', 'C', 'D', 'U']
+    classification = max(classLetters, key=lambda g: grade_order.index(g))
+
     # Display a small inline summary table containing information for the test report.
     if 'siData' in ssData and 'igaData' in ssData:
         report_d = {
@@ -709,27 +713,33 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
             'Filename of InGaAs Measurement': ssData['igaData']['filename'],
             'Date of InGaAs Measurement': ssData['igaData']['filename'],
             'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4)
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification
             }
     elif 'siData' in ssData:
         report_d = {
             'Filename of Si Measurement': ssData['siData']['filename'],
             'Date of Si Measurement': ssData['siData']['date'],
             'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4)
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification
             }
     elif 'igaData' in ssData:
         report_d = {
             'Filename of InGaAs Measurement': ssData['igaData']['filename'],
             'Date of InGaAs Measurement': ssData['igaData']['date'],
             'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4)
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification
             }
     resultsFrame = pd.DataFrame.from_dict(report_d, orient = 'index')
     print(tabulate(resultsFrame, colalign = ('right',)))
     
-    saveCheck = input('Do you want to save the spectral irradiance data as a tab-delineated file? [y/n]:\n')
-    if saveCheck.lower() == 'y':
+
+    saveCheck = rawdata
+    savePath = 'output'
+    print(saveCheck)
+    if saveCheck == True:
         dataToSave = {
             'Wavelengths [nm]': waves,
             'Spectral Irradiance [W/cm^2/nm]': irrad
@@ -738,7 +748,7 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
         saveFrame = pd.DataFrame(dataToSave)
         saveFrame.to_csv(savePath + saveName, sep = '\t', index = False)
         print('Your irradiance data has been saved to ' + savePath + saveName + '.')
-    elif saveCheck.lower() == 'n':
+    elif saveCheck == False:
         print('Your irradiance data has not been saved.')
 
     return report_d

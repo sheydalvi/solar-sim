@@ -144,8 +144,6 @@ def ssdatImport(uploaded_file):
     print(theDictionary['filename'] + ' has been successfully imported.')
     return theDictionary
 
-
-
 def sudatImport(uploaded_file):
     if uploaded_file is None:
         print('No file was uploaded.')
