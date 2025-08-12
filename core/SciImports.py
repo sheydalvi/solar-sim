@@ -8,10 +8,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-
-
-
-import pandas as pd
 import io
 
 
@@ -96,9 +92,6 @@ def ivdatImports(uploaded_files):
 
     return theDictionary
 
-
-
-
 def ssdatImport(uploaded_file):
     if uploaded_file is None:
         print('No file was uploaded.')
@@ -109,11 +102,13 @@ def ssdatImport(uploaded_file):
 
     # Find header row for data
     for hLineNo, hLine in enumerate(file_lines):
-        if hLine.startswith('X Wavelength'):
+        # print(hLine)
+        if hLine.startswith('Wavelength'):
             headerRows = hLineNo - 1
+            print(headerRows)
             break
     else:
-        raise ValueError("Could not find 'X Wavelength' header in file.")
+        raise ValueError("Could not find 'Wavelength' header in file.")
 
     # Read data section
     file_str = '\n'.join(file_lines)
@@ -150,144 +145,6 @@ def ssdatImport(uploaded_file):
     return theDictionary
 
 
-def specradImport(guideString = None):
-    # Transfer function addresses
-    SiHi = r'\\10.0.0.11\TestingLibrary\PYTHON SCRIPTS\Required Files\Transfer Functions\Transfer-Si-HI.csv'
-    SiLo = r'\\10.0.0.11\TestingLibrary\PYTHON SCRIPTS\Required Files\Transfer Functions\Transfer-Si-LO.csv'
-    IGAHi = r'\\10.0.0.11\TestingLibrary\PYTHON SCRIPTS\Required Files\Transfer Functions\Transfer-IGA-HI.csv'
-    IGALo = r'\\10.0.0.11\TestingLibrary\PYTHON SCRIPTS\Required Files\Transfer Functions\Transfer-IGA-LO.csv'
-    
-    # Import Si detector data from file (if any).
-    status_Si = input('\nSelect from the following scan types:\n(1) Si - HI Gain,\n(2) Si - LO Gain, \n(3) No Si Measurement\n')
-    if status_Si == '1' or status_Si == '2':
-        rawSi = ssdatImport('Select the desired Si detector data file.')
-        SiPath = os.path.dirname(rawSi['filepath'])
-        
-        # Pick the correct transfer function to use based on the gain selection.
-        if status_Si == '1':
-            transferFunction = pd.read_csv(SiHi, names = ('tWaves', 'tdata'))
-            print('\nThe HI gain transfer function for this Si detector is defined across the range of 250 - 1100 nm.')
-        elif status_Si == '2':
-            transferFunction = pd.read_csv(SiLo, names = ('tWaves', 'tdata'))
-            print('\nThe LO gain transfer function for this Si detector is defined across the range of 250 - 1100 nm.')
-        
-        # Convert the data from volts to spectral irradiance using the selected transfer function.
-        waves_Si = round(rawSi['wavelengths'])
-        signal_Si = rawSi['signal']
-        convSi = conv2Irrad(waves_Si, signal_Si, transferFunction)
-    elif status_Si == '3':
-        pass
-    else:
-        print('This is not a valid selection. Please try again.')
-        return
-    
-    # Import InGaAs detector data from file (if any).
-    status_IGA = input('\nSelect from the following scan types:\n(1) InGaAs - HI Gain,\n(2) InGaAs - LO Gain,\n(3) No InGaAs Measurement\n')
-    if status_IGA == '1' or status_IGA == '2':
-        rawIGA = ssdatImport('Select the desired InGaAs detector data file.')
-        IGAPath = os.path.dirname(rawIGA['filepath'])
-        
-        # Pick the correct transfer function to use based on the gain selection.
-        if status_IGA == '1':
-            transferFunction = pd.read_csv(IGAHi, names = ('tWaves', 'tdata'))
-            print('\nThe HI gain transfer function for this InGaAs detector is defined across the range of 900 - 1749 nm.')
-        elif status_IGA == '2':
-            transferFunction = pd.read_csv(IGALo, names = ('tWaves', 'tdata'))
-            print('\nThe LO gain transfer function for this InGaAs detector is defined across the range of 1001 - 1749 nm.')
-        
-        # Convert the data from volts to spectral irradiance using the selected transfer function.
-        waves_IGA = round(rawIGA['wavelengths'])
-        signal_IGA = rawIGA['signal']
-        convIGA = conv2Irrad(waves_IGA, signal_IGA, transferFunction)
-    elif status_IGA == '3':
-        pass
-    else:
-        print('This is not a valid selection. Please try again.')
-        return
-    
-    # Determine if there are both Si and InGaAs data. If so, combine them into a single dataset to be returned.
-    if status_Si != '3' and status_IGA != '3':
-        minXTick = int(np.ceil(convSi['irradWaves'][0] / 100) * 100)
-        maxXTick = convIGA['irradWaves'][len(convIGA['irradWaves']) - 1]
-        plt.xticks(np.arange(minXTick, maxXTick, 200))
-        plt.xlabel('Wavelength [nm]')
-        plt.ylabel('Irradiance [a.u.]')
-        plt.plot(convSi['irradWaves'], convSi['irrad'], label = 'Si Data', lw = 1)
-        plt.plot(convIGA['irradWaves'], convIGA['irrad'], label = 'InGaAs Data', lw = 1)
-        plt.legend(loc = 'best', fontsize = 'x-small')
-        plt.show()
-        
-        crosspoint = int(input('\nEnter the wavelength value to use as the crossover point:\n'))    # This will usually be 1100.
-        
-        trimmedIndices_Si = np.where(convSi['irradWaves'] <= crosspoint)
-        trimmedWaves_Si = convSi['irradWaves'][trimmedIndices_Si]
-        SI_Si = convSi['irrad'].to_numpy()
-        trimmedSignal_Si = SI_Si[trimmedIndices_Si]
-        
-        trimmedIndices_IGA = np.where(convIGA['irradWaves'] > crosspoint)
-        trimmedWaves_IGA = convIGA['irradWaves'][trimmedIndices_IGA]
-        SI_IGA = convIGA['irrad'].to_numpy()
-        trimmedSignal_IGA = SI_IGA[trimmedIndices_IGA]
-        
-        allWaves = np.concatenate((trimmedWaves_Si, trimmedWaves_IGA))
-        allSignal = np.concatenate((trimmedSignal_Si, trimmedSignal_IGA))
-        allDIndices = np.concatenate((rawSi['dIndices'], rawIGA['dIndices']))
-        allGIndices = np.concatenate((rawSi['gIndices'], rawIGA['gIndices']))
-        allFIndices = np.concatenate((rawSi['fIndices'], rawIGA['fIndices']))
-        allFiles = {
-            'Si': rawSi['filename'],
-            'InGaAs': rawIGA['filename']
-            }
-        allMonos = {
-            'Si': rawSi['monoModel'],
-            'InGaAs': rawIGA['monoModel'],
-            }
-        allSteps = {
-            'Si': rawSi['stepSize'],
-            'InGaAs': rawIGA['stepSize']
-            }
-        
-        masterPath = SiPath
-    
-    elif status_Si != '3':
-        allWaves = convSi['irradWaves']
-        allSignal = convSi['irrad']
-        allDIndices = rawSi['dIndices']
-        allGIndices = rawSi['gIndices']
-        allFIndices = rawSi['fIndices']
-        allFiles = rawSi['filename']
-        allMonos = rawSi['monoModel']
-        allSteps = rawSi['stepSize']
-        
-        masterPath = SiPath
-    
-    elif status_IGA != '3':
-        allWaves = convIGA['irradWaves']
-        allSignal = convIGA['irrad']
-        allDIndices = rawIGA['dIndices']
-        allGIndices = rawIGA['gIndices']
-        allFIndices = rawIGA['fIndices']
-        allFiles = rawIGA['filename']
-        allMonos = rawIGA['monoModel']
-        allSteps = rawIGA['stepSize']
-        
-        masterPath = IGAPath
-    
-    theDictionary = {
-        'wavelengths': allWaves,
-        'signal': allSignal,
-        'dIndices': allDIndices,
-        'gIndices': allGIndices,
-        'fIndices': allFIndices,
-        'filepath': masterPath,
-        'filename': allFiles,
-        'monoModel': allMonos,
-        'startWave': allWaves[0],
-        'stopWave': allWaves[len(allWaves) - 1],
-        'stepSize': allSteps
-        }
-    
-    return theDictionary
 
 def sudatImport(uploaded_file):
     if uploaded_file is None:

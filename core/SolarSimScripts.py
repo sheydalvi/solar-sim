@@ -13,8 +13,6 @@ from . import SciImports as ScImp
 from scipy import interpolate
 from tabulate import tabulate
 from .Conversions import conv2Irrad
-# from . import Conversions
-# conv2Irrad = Conversions.conv2Irrad()
 
 
 def NUScript(nuData):
@@ -193,7 +191,7 @@ def TIScript(tiData):
     # print(tabulate(resultsFrame, colalign = ('right',)))
     return report_d
 
-def SMScript():
+def SMScript(status_Si, status_IGA, AMType, SiData, IGAData):
     '''
     specScript: This function take a single .ssdat file from the spectroradiometer as input, calculates its degree of matching to a given solar spectrum, then outputs the results along with a plot for the test report.
     '''
@@ -222,10 +220,9 @@ def SMScript():
     ssData = {}
     
     # Ask the user if there is any data taken with the Si detector. If so, import it.
-    status_Si = input('\nSelect from the following scan types:\n(1) Si - HI Gain,\n(2) Si - LO Gain,\n(3) No Si Measurement\n')
     if status_Si == '1' or status_Si == '2':
         # Import the Si detector data.
-        ssData['siData'] = ScImp.ssdatImport('Select the desired .ssdat file containing Si detector data.')
+        ssData['siData'] = SiData
         
         # Use the correct transfer function based on the gain selection.
         if status_Si == '1':
@@ -239,10 +236,9 @@ def SMScript():
         irrad_Si = conv2Irrad(ssData['siData']['wavelengths'], ssData['siData']['signal'], tFunc_Si)
     
     # Ask the user if there is any data taken with the InGaAs detector. If so, import it.
-    status_IGA = input('\nSelect from the following scan types:\n(1) InGaAs - HI Gain,\n(2) InGaAs - LO Gain,\n(3) No InGaAs Measurement\n')
     if status_IGA == '1' or status_IGA == '2':
         # Import the InGaAs detector data.
-        ssData['igaData'] = ScImp.ssdatImport('Select the desired .ssdat file contaning InGaAs detector data.')
+        ssData['igaData'] = IGAData
         
         # Use the correct transfer function based on the gain selection.
         if status_IGA == '1':
@@ -262,7 +258,6 @@ def SMScript():
         plt.plot(irrad_IGA['irradWaves'], irrad_IGA['irrad'], label = 'InGaAs Data')
         plt.xlabel('Wavlength [nm]')
         plt.ylabel('Spectral Irradiance [W/cm^2/nm]')
-        plt.savefig("SM1.png")
         
         crosspoint = int(input('\n Enter the wavelength value to use as the crossover point:\n'))   # This will usually be 1100
         
@@ -295,10 +290,14 @@ def SMScript():
         savePath = ssData['igaData']['folder']
     
     # Import the reference spectra.
-    specRef = pd.read_csv(stdSpecPath, sep = '\t', header = 0, engine = 'python', names = ('Wavelengths', 'AM0 Irrad', 'AM1.5G Irrad', 'AM1.5D Irrad', 'AM0 Rad', 'AM1.5G Rad', 'AM1.5D Rad'))
-    
-    # Ask the user which spectrum to match against.
-    AMType = input('\nEnter the number corresponding to the desired AM spectrum to compare against.:\n(1) AM1.5D ASTM,\n(2) AM1.5G ASTM,\n(3) AM0 ASTM,\n(4) AM1.5G IEC Table 1,\n(5)AM1.5G IEC Table 2,\n(6) AM1.5G ASTM, 700 - 1100 nm\n')
+    specRef = pd.read_csv(
+        stdSpecPath,
+        sep=',',
+        header=0,
+        engine='python',
+        names=['Wavelengths', 'AM0 Irrad', 'AM1.5G Irrad', 'AM1.5D Irrad', 'AM0 Rad', 'AM1.5G Rad', 'AM1.5D Rad'],
+    )
+
     
     if AMType == '1':
         refIrrad = specRef['AM1.5D Irrad'] / 10000
@@ -700,7 +699,7 @@ def SMScript():
     table.set_fontsize(5)
     table.auto_set_column_width(col = list(range(len(tableDF.columns))))
     plt.tight_layout()
-    plt.savefig("SM.png")
+    plt.savefig("output/SM2.png")
     
     # Display a small inline summary table containing information for the test report.
     if 'siData' in ssData and 'igaData' in ssData:

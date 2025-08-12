@@ -75,11 +75,8 @@ for i, para in enumerate(doc.paragraphs):
         run.add_picture("output/NU.png", width=Inches(10))
         break
 
-
 # --- TI ---
 st.header("Upload Your Data Files")
-
-
 
 uploaded_TI = st.file_uploader("Upload .ivdat file", type=['ivdat'], accept_multiple_files=True)
 
@@ -127,39 +124,33 @@ for i, para in enumerate(doc.paragraphs):
 
 
 # --- Choice Inputs ---
-silicons = ["high gain", "low gain", "no silicon"]
-igas = ["high gain", "low gain", "no in gas"]
-standards = ["AM1.5G", "AM1.5D", "AM0"]
+# silicons = ["high gain", "low gain", "no silicon"]
+# igas = ["high gain", "low gain", "no in gas"]
+# standards = ["AM1.5G", "AM1.5D", "AM0"]
+
+silicons = ['2', '1', '3']
+igas =  ['3', '1', '2']
+standards = ['1', '2', '3', '4', '5', '6']
+
 
 st.header("Spectrometry Analysis")
 
-silicon = st.selectbox("First Choice", silicons)
-iga = st.selectbox("First Choice", igas)
-standard = st.selectbox("First Choice", standards)
+status_Si = st.selectbox("Silicon", silicons)
+status_IGA = st.selectbox("IGA", igas)
+AMType = st.selectbox("The Standard", standards)
 
 # --- SM ---
 
-uploaded_SM = st.file_uploader("Upload .ssdat file", type=['ssdat'])
+uploaded_Si = st.file_uploader("Upload .ssdat file Si", type=['ssdat'], key='Si')
+uploaded_IGA = st.file_uploader("Upload .ssdat file IGA", type=['ssdat'], key='IGA')
 
-if uploaded_SM:
-    result_SM = ssdatImport(uploaded_SM) 
-    st.success("Files successfully parsed.")
+# if uploaded_Si:
+result_Si = ssdatImport(uploaded_Si)
+result_IGA = ssdatImport(uploaded_IGA)
 
-    # Display parsed info (optional)
-    # for key, value in result_TI.items():
-    #     st.subheader(value['filename'])
-    #     st.write(value)
+SM_report = SMScript(status_Si, status_IGA, AMType, result_Si, result_IGA)
+st.write("Results:", SM_report)
 
-    # Optional: Call your analysis
-    SM_report = SMScript(result_SM)
-    st.write("Results:", SM_report)
-
-
-
-
-# --- Graphs ---
-
-# --- Report Gen ---
 
 # doc.save("output/report_saved.docx")
 
