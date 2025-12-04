@@ -259,7 +259,7 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, cro
         plt.plot(irrad_Si['irradWaves'], irrad_Si['irrad'], label = 'Si Data')
         plt.plot(irrad_IGA['irradWaves'], irrad_IGA['irrad'], label = 'InGaAs Data')
         plt.xlabel('Wavlength [nm]')
-        plt.ylabel('Spectral Irradiance [W/cm^2/nm]')
+        plt.ylabel('Spectral Irradiance [W/m^2/nm]')
                 
         # trim the Si data
         trimmedIndices_Si = np.where(irrad_Si['irradWaves'] <= crosspoint)[0]

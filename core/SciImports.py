@@ -144,6 +144,60 @@ def ssdatImport(uploaded_file):
     print(theDictionary['filename'] + ' has been successfully imported.')
     return theDictionary
 
+
+def sidatImport(uploaded_file):
+    if uploaded_file is None:
+        print('No file was uploaded.')
+        return None
+
+    # Decode entire file and split into lines
+    file_lines = uploaded_file.getvalue().decode('utf-8').splitlines()
+
+    # Find header row for data
+    for hLineNo, hLine in enumerate(file_lines):
+        # print(hLine)
+        if hLine.startswith('Wavelength'):
+            headerRows = hLineNo - 1
+            print(headerRows)
+            break
+    else:
+        raise ValueError("Could not find 'Wavelength' header in file.")
+
+    # Read data section
+    file_str = '\n'.join(file_lines)
+    file_io = StringIO(file_str)
+    fileData = pd.read_csv(file_io, sep='\t', header=headerRows, skipfooter=1, engine='python')
+
+    numberOfData = len(fileData['Wavelength(nm)'])
+
+    # Rewind to read header section
+    file_io.seek(0)
+    headerData = pd.read_csv(file_io, sep='\t', header=0,
+                             skipfooter=numberOfData + 4,
+                             names=('Parameters', 'Values'),
+                             engine='python')
+
+    # Build the dictionary to return
+    theDictionary = {
+        'wavelengths': fileData['Wavelength(nm)'],
+        'signal': fileData['Signal(V)'],
+        'transfer function' : fileData['Transfer_Function(W/m2/nm/V)'],
+        'irradiance': fileData['SI(W/m2/nm)'],
+        'dIndices': fileData['Detector(#)'],
+        'gIndices': fileData['GratingIndex(#)'],
+        'fIndices': fileData['FilterIndex(#)'],
+        'filepath': uploaded_file.name,   # Just the filename, no full path
+        'filename': headerData['Values'][0],
+        'date': headerData['Values'][1],
+        'monoModel': headerData['Values'][5],
+        'startWave': headerData['Values'][7],
+        'stopWave': headerData['Values'][8],
+        'stepSize': headerData['Values'][9],
+    }
+
+    print(theDictionary['filename'] + ' has been successfully imported.')
+    return theDictionary
+
 def sudatImport(uploaded_file):
     if uploaded_file is None:
         print('No file was uploaded.')
@@ -236,118 +290,3 @@ def sudatImport(uploaded_file):
     print(theDictionary['filename'] + ' has been successfully imported.')
     return theDictionary
 
-
-    # Ask the user to select the desired .tsmdat file and store its address.
-    if guideString == None:
-        samplePath = filedialog.askopenfilename(initialdir = r'\\10.0.0.11\Projects', filetypes = [('Transmittance Sample Scan Data', '*.tsmdat')], title = 'Select desired .tsmdat file.')
-    elif isinstance(guideString, str):
-        samplePath = filedialog.askopenfilename(initialdir = r'\\10.0.0.11\Projects', filetypes = [('Transmittance Sample Scan Data', '*.tsmdat')], title = guideString)
-    else:
-        print('Invalid optional argument. trnsImport accepts either 0 arguments, or a single, optional argument which must be a string.')
-    
-    # Check how many lines are in the sample scan's header so we can read in the header and data separately.
-    with open(samplePath, 'r') as headerCheck:
-        for hLineNo, hLine in enumerate(headerCheck):
-            if hLine[:10] == 'Wavelength':
-                sampleHeaderRows = hLineNo - 1
-                break
-    
-    # Check how many lines are in the sample scan's footer so we can read in the data and footer separately.
-    with open(samplePath, 'r') as footerCheck:
-        for fLineNo, fLine in enumerate(footerCheck):
-            if fLine[:8] == 'END DATA':
-                footerStartLine = fLineNo
-                sampleFooterRows = 2
-            if fLine[:10] == 'END FOOTER':
-                sampleFooterRows = fLineNo - footerStartLine + 1
-                break
-    
-    # Read in the sample scan's header, footer, and data separately.
-    sampleData = pd.read_csv(samplePath, sep = '\t', header = sampleHeaderRows, skipfooter = sampleFooterRows, engine = 'python')
-    sampleNumData = len(sampleData['Wavelength(nm)'])
-    sampleHeader = pd.read_csv(samplePath, sep = '\t', header = 0, skipfooter = sampleNumData + sampleFooterRows + 4, names = ('Parameters', 'Values'), engine = 'python')
-    sampleFooter = pd.read_csv(samplePath, sep = '\t', header = sampleHeaderRows + sampleNumData + 2, skipfooter = 1, names = ('Parameters', 'Values'), engine = 'python')
-    
-    # Extract the original address of the associated reference scan and check if it is still located there. If not, ask the user where it is.
-    if os.path.exists(sampleHeader['Values'][6]):
-        refPath = sampleHeader['Values'][6]
-    else:
-        refPath = filedialog.askopenfilename(filetypes = [('Transmittance Reference Scan Data', '*.tclrdat')], title = 'Select desired .tclrdat file.')
-    
-    # Check how many lines are in the reference scan's header so we can read in the header and data separately.
-    with open(refPath, 'r') as headerCheck:
-        for hLineNo, hLine in enumerate(headerCheck):
-            if hLine[:10] == 'Wavelength':
-                refHeaderRows = hLineNo - 1
-                break
-    
-    # Read in the reference scan's header, and data separately. There is no footer.
-    refData = pd.read_csv(refPath, sep = '\t', header = refHeaderRows, skipfooter = 1, engine = 'python')
-    refNumData = len(refData['Wavelength(nm)'])
-    refHeader = pd.read_csv(refPath, sep = '\t', header = 0, skipfooter = refNumData + 4, names = ('Parameters', 'Values'), engine = 'python')
-    
-    # Store all of the important data to be included in scan-specific dictionaries.
-    sampleDictionary = {
-        'wavelengths': sampleData['Wavelength(nm)'],
-        'signal': sampleData['Raw_Signal(V)'],
-        'lightSignal': sampleData['Light Signal(V)'],
-        'refSignal': sampleData['Reference Signal(V)'],
-        'transmittance': sampleData['Transmittance(%)'],
-        'gIndices': sampleData['GratingIndex(#)'],
-        'fIndices': sampleData['FilterIndex(#)'],
-        'lIndices': sampleData['SourceIndex(#)'],
-        'outPercent': sampleData['LampOutput(%)'],
-        'outCurrent': sampleData['LampCurrent(A)'],
-        'outVoltage': sampleData['LampVoltage(V)'],
-        'outPower': sampleData['LampPower(W)'],
-        'itIndices': sampleData['IntegrationTime_Index(#)'],
-        'sIndices': sampleData['Sensitivity_Index(#)'],
-        'filename': sampleHeader['Values'][0],
-        'date': sampleHeader['Values'][1],
-        'refFile': sampleHeader['Values'][6],
-        'startWave': sampleHeader['Values'][8],
-        'stopWave': sampleHeader['Values'][9],
-        'stepSize': sampleHeader['Values'][10],
-        'delay': sampleHeader['Values'][11],
-        'range': sampleHeader['Values'][12],
-        'intTime': sampleHeader['Values'][13],
-        'chopFreq': sampleHeader['Values'][14],
-        'maxTrns': sampleFooter['Values'][0],
-        'maxTrnsWave': sampleFooter['Values'][1],
-        'minTrns': min(sampleData['Transmittance(%)']),
-        'minTrnsWave': sampleData['Wavelength(nm)'][np.where(sampleData['Transmittance(%)'] == min(sampleData['Transmittance(%)']))[0][0]]
-        }
-    referenceDictionary = {
-        'wavelengths': refData['Wavelength(nm)'],
-        'signal': refData['Wavelength(nm)'],
-        'lightSignal': refData['Light Signal(V)'],
-        'gIndices': refData['GratingIndex(#)'],
-        'fIndices': refData['FilterIndex(#)'],
-        'lIndices': refData['SourceIndex(#)'],
-        'outPercent': refData['LampOutput(%)'],
-        'outCurrent': refData['LampCurrent(A)'],
-        'outVoltage': refData['LampVoltage(V)'],
-        'outPower': refData['LampPower(W)'],
-        'itIndices': refData['IntegrationTime_Index(#)'],
-        'sIndices': refData['Sensitivity_Index(#)'],
-        'filename': refHeader['Values'][0],
-        'date': refHeader['Values'][1],
-        'startWave': refHeader['Values'][7],
-        'stopWave': refHeader['Values'][8],
-        'stepSize': refHeader['Values'][9],
-        'delay': refHeader['Values'][10],
-        'range': refHeader['Values'][11],
-        'intTime': refHeader['Values'][12],
-        'chopFreq': refHeader['Values'][13]
-        }
-    
-    # Store each of the file dictionaries into a master dictionary to be returned.
-    theDictionary = {
-        'referenceScan': referenceDictionary,
-        'sampleScan': sampleDictionary
-        }
-    
-    print(sampleDictionary['filename'] + ' has been successfully imported.')
-    print(referenceDictionary['filename'] + ' has been successfully imported.')
-    
-    return theDictionary
