@@ -51,43 +51,43 @@ def cell_format_info(table, row, col, text):
 
 
 
-st.title("SciSun Test Analysis Dashbord")
+st.title("SF Test Analysis Dashbord")
 
 col1, col2, col3 = st.columns(3)
 with col1:
     PN = st.text_input(
     "Project Number:",
-    "12345",
+    "",
     key="pn",
 )
 with col2:
     SN = st.text_input(
-    "SciSun Serial Number:",
-    "0001234",
+    "SF Serial Number:",
+    "",
     key="sn",
 )
 with col3:
     PS = st.text_input(
     "Power Supply Serial Number:",
-    "0001234",
+    "",
     key="ps",
 )
 with col1:
     user = st.text_input(
     "End User:",
-    "University of Western Ontario",
+    "",
     key="user",
 )
 with col2:
     Country = st.text_input(
     "End User Country:",
-    "Canada",
+    "",
     key="country",
 )
 with col3:
     tester = st.text_input(
     "Test Performed by:",
-    "SA",
+    "",
     key="tester",
 )
     
@@ -96,43 +96,8 @@ with col3:
 #     Scisun = st.selectbox("SciSun Model:", models)
 
     
-models= ['[160-9108-C01] Scisun-150-1.5G-TS-MS-NA',
-'[160-9108-C02] Scisun-150-1.5G-TS-MS-AA',
-'[160-9108-C03] Scisun-150-1.5G-TS-MS-MA',
-'[160-9108-C04] Scisun-150-1.5G-TS-AS-NA',
-'[160-9108-C05] Scisun-150-1.5G-TS-AS-AA',
-'[160-9108-C06] Scisun-150-1.5G-TS-AS-MA',
-'[160-9108-C07] Scisun-150-1.5G-MC-MS-NA',
-'[160-9108-C08] Scisun-150-1.5G-MC-MS-AA',
-'[160-9108-C09] Scisun-150-1.5G-MC-MS-MA',
-'[160-9108-C13] Scisun-300-1.5G-TS-MS-NA',
-'[160-9108-C14] Scisun-300-1.5G-TS-MS-AA',
-'[160-9108-C15] Scisun-300-1.5G-TS-MS-MA',
-'[160-9108-C16] Scisun-300-1.5G-TS-AS-NA',
-'[160-9108-C17] Scisun-300-1.5G-TS-AS-AA',
-'[160-9108-C18] Scisun-300-1.5G-TS-AS-MA',
-'[160-9108-C19] Scisun-300-1.5G-MC-MS-NA',
-'[160-9108-C20] Scisun-300-1.5G-MC-MS-AA',
-'[160-9108-C21] Scisun-300-1.5G-MC-MS-MA',
-'(160-9109-C01) SCISUN-300-0.00-TS-MS-NA-AAA',
-'(160-9109-C02) SCISUN-300-0.00-TS-MS-MA-AAA',
-'(160-9109-C03) SCISUN-300-0.00-TS-MS-AA-AAA',
-'(160-9109-C04) SCISUN-300-0.00-TS-AS-NA-AAA',
-'(160-9109-C05) SCISUN-300-0.00-TS-AS-MA-AAA',
-'(160-9109-C06) SCISUN-300-0.00-TS-AS-AA-AAA',
-'(160-9109-C07) SCISUN-300-0.00-TS-MS-NA-BAA',
-'(160-9109-C08) SCISUN-300-0.00-TS-MS-MA-BAA',
-'(160-9109-C09) SCISUN-300-0.00-TS-MS-AA-BAA',
-'(160-9109-C10) SCISUN-300-0.00-TS-AS-NA-BAA',
-'(160-9109-C11) SCISUN-300-0.00-TS-AS-MA-BAA',
-'(160-9109-C12) SCISUN-300-0.00-TS-AS-AA-BAA',
-'[160-9109-C13] SCISUN-300-0.00-MC-MS-NA-AAA',
-'[160-9109-C14] SCISUN-300-0.00-MC-MS-MA-AAA',
-'[160-9109-C15] SCISUN-300-0.00-MC-MS-AA-AAA',
-'[160-9109-C16] SCISUN-300-0.00-MC-MS-NA-BAA',
-'[160-9109-C17] SCISUN-300-0.00-MC-MS-MA-BAA',
-'[160-9109-C18] SCISUN-300-0.00-MC-MS-AA-BAA']
-Scisun = st.selectbox("SciSun Model:", models)
+models= ['SF150', "SF300"]
+Scisun = st.selectbox("SF Model:", models)
 psmodels= ['601-300','601-150']
 Psmodel = st.selectbox("Power Supply Model:", psmodels)
 
@@ -154,14 +119,14 @@ st.header("Solar Simulator Specifications")
 
 
 spectab = pd.DataFrame({
-    "spec": ["filter", "1 Sun", "2 Sun", "Max", "Min", "field of view", "Lamp age", "warmup", "T", "date", "target area", "A", "B"],
-    "value": ["", "", "", "", "", "8.16", "", "15", "", date.today().strftime("%Y-%m-%d"), "50x50", "380", "4"],
+    "spec": ["filter", "1 Sun", "Max", "Min", "field of view", "Lamp age", "warmup", "T", "date", "target area", "A", "B"],
+    "value": ["", "", "", "", "2", "", "15", "", date.today().strftime("%Y-%m-%d"), "", "", "4"],
     "notes": ["AM Filter Part Number: XXX-XXXX\nBatch: XXXXX",
-              "Attenuator Setting: XX\nMesh Filter: XX",
-              "Attenuator Setting: XX\nMesh Filter: XX",
-              "Power Supply Setting: XX.X%\nAttenuator Setting: XX\nMesh Filter: XX",
-              "Power Supply Setting: XX.X%\nAttenuator Setting: XX\nMesh Filter: XX",
-              "","", "","","","","",""],
+              "",
+              "Power Supply Setting: XX.X%",
+              "Power Supply Setting: XX.X%",
+              "Measured using the focus spot method with measured power over a given aperture to determine full angle collimation. >XX.X% of total power within 2 degrees full angle.",
+              "", "","","","","",""],
 })
 
 columns = ['Model', 'Serial No.', 'Calibration Date']
@@ -322,7 +287,7 @@ else:
     st.error("SM file not uploaded")
 
 
-
+# doc.save("output/report_saved.docx")
 
 
 if SM and TI and NU:
@@ -335,7 +300,7 @@ if SM and TI and NU:
     from docx.enum.table import WD_ALIGN_VERTICAL
     from docx.oxml.ns import qn
 
-    doc =  Document(r"\\10.0.0.11\TestingLibrary\TESTING REPORTS\TEMPLATES\160- SMALL SOLARS\TR-SCISUN-01 E927-19_pythontemplate.docx")
+    doc =  Document(r"\\10.0.0.11\TestingLibrary\TESTING REPORTS\TEMPLATES\160- SMALL SOLARS\TR-SF-01 E927-10_pythontemplate.docx")
 
     # access a specific table by index
     projrect = doc.tables[0]  
@@ -471,7 +436,8 @@ if SM and TI and NU:
             run.add_picture("output/SM.png", width=Inches(7))
             break
 
-col111, col222, col333, col444 = st.columns(4)
+
+col111, col222 = st.columns(2)
 with col111:
     if st.button("Generate Report"):
         import io
@@ -488,9 +454,8 @@ with col111:
         )
 
 with col222:
-    # generate and download and  your files
-    st.download_button("Download NU file", data=csv_bytes_NU, file_name=f"SpatialUniformityData_ProjectNo{PN}SN{SN}.csv")
-with col333:
-    st.download_button("Download TI file", data=csv_bytes_TI, file_name=f"TemporalInstabilityData_ProjectNo{PN}SN{SN}.csv")
-with col444:
-    st.download_button("Download SM file", data=csv_data_SM, file_name=f"SpectralMatchData_ProjectNo{PN}SN{SN}.csv")
+    if st.button("Prepare CSV files"):
+        # Generate your files
+        st.download_button("Download File 1", data=csv_bytes_TI, file_name=f"TemporalInstabilityData_ProjectNo{PN}SN{SN}.csv")
+        st.download_button("Download File 2", data=csv_bytes_NU, file_name=f"SpatialUniformityData_ProjectNo{PN}SN{SN}.csv")
+        st.download_button("Download File 3", data=csv_data_SM, file_name=f"SpectralMatchData_ProjectNo{PN}SN{SN}.csv")
