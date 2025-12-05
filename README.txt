@@ -1,3 +1,5 @@
+*** Core scripts developed by Kyle Graham ***
+
 ================ ONE CLICK LAUNCH (LOCAL) ==================
 For running locally (recommended)
 
