@@ -193,6 +193,7 @@ def TIScript(tiData):
     # print(tabulate(resultsFrame, colalign = ('right',)))
     return report_d
 
+
 def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, crosspoint):
     '''
     specScript: This function take a single .ssdat file from the spectroradiometer as input, calculates its degree of matching to a given solar spectrum, then outputs the results along with a plot for the test report.
@@ -289,6 +290,497 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, cro
         irrad = irrad_IGA['irradWaves']
         savePath = ssData['igaData']['folder']
     
+    # Import the reference spectra.
+    specRef = pd.read_csv(
+        stdSpecPath,
+        sep=',',
+        header=0,
+        engine='python',
+        names=['Wavelengths', 'AM0 Irrad', 'AM1.5G Irrad', 'AM1.5D Irrad', 'AM0 Rad', 'AM1.5G Rad', 'AM1.5D Rad'],
+    )
+
+    
+    if AMType == '1':
+        refIrrad = specRef['AM1.5D Irrad'] / 10000
+    elif AMType == '2':
+        refIrrad = specRef['AM1.5G Irrad'] / 10000
+    elif AMType == '3':
+        refIrrad = specRef['AM0 Irrad'] / 10000
+    elif AMType == '4':
+        refIrrad = specRef['AM1.5G Irrad'] / 10000
+    elif AMType == '5':
+        refIrrad = specRef['AM1.5G Irrad'] / 10000
+    elif AMType == '6':
+        refIrrad = specRef['AM1.5G Irrad'] / 10000
+    else:
+        pass
+    
+    # Interpolate the collected data so it has the same resolution as the reference spectrum (1 nm steps)
+    interpWaves = np.round(np.arange(round(min(waves), 1), round(max(waves), 1) + 0.1, 0.1), 3)
+    
+    interper = interpolate.interp1d(waves, irrad)
+    interpIrrad = interper(interpWaves)
+    
+    # Load the ASTM wavelength bins and intensity percentage, depending on the reference spectrum.
+    if AMType == '1':       # ASTM AM1.5D
+        print('\nTesting for AM1.5D Direct Normal ASTM E927-19')
+        lowerBounds = np.array((400, 500, 600, 700, 800, 900))
+        upperBounds = np.array((500, 600, 700, 800, 900, 1100))
+        ratios = np.array((16.75, 19.49, 18.36, 15.08, 12.82, 16.69))
+        stairsLO = ratios * 0.75    # Class A lower bounds for stair plot
+        stairsHI = ratios * 1.25    # Class A upper bounds for stair plot
+        binLabels = ['400-500', '500-600', '600-700', '700-800', '800-900', '900-1100']
+        
+        # Ensure that there is enough data to fulfill standard requirements
+        if interpWaves[-1] < upperBounds[5]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5D classification under ASTM E927-19.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5D classification under ASTM E927-19.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[5])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    if AMType == '2':   # ASTM AM1.5G
+        print('\nTesting for AM1.5G Hemispherical ASTM E927-19')
+        lowerBounds = np.array((400, 500, 600, 700, 800, 900))
+        upperBounds = np.array((500, 600, 700, 800, 900, 1100))
+        ratios = np.array((18.21, 19.73, 18.20, 14.79, 12.39, 15.89))
+        stairsLO = ratios * 0.75    # Class A lower bounds for stair plot
+        stairsHI = ratios * 1.25    # Class A upper bounds for stair plot
+        binLabels = ['400-500', '500-600', '600-700', '700-800', '800-900', '900-1100']
+        
+        # Ensure that there is enough data to fulfill standard requirements
+        if interpWaves[-1] < upperBounds[5]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5G classification under ASTM E927-19.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5G classification under ASTM E927-19.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[5])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket.
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    if AMType == '3':   # ASTM AM0
+        print('\nTesting for AM0 Extra-Terrestrial ASTM E927-19')
+        lowerBounds = np.array((350, 400, 500, 600, 700, 800, 900, 1100))
+        upperBounds = np.array((400, 500, 600, 700, 800, 900, 1100, 1400))
+        ratios = np.array((4.67, 16.80, 16.68, 14.28, 11.31, 8.98, 13.50, 12.56))
+        stairsLO = ratios * 0.75    # Class A lower bounds for stair plot
+        stairsHI = ratios * 1.25    # Class A upper bounds for stair plot
+        binLabels = ['350-400', '400-500', '500-600', '600-700', '700-800', '800-900', '900-1100', '1100-1400']
+        
+        # Ensure that there is enough data to fulfill standard requirements.
+        if interpWaves[-1] < upperBounds[7]:
+            print('Your data does not cover the complete wavelength range (350 - 1400 nm) required for AM0 classification under ASTM E927-19.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength range (350 - 1400 nm) required for AM0 classification under ASTM E927-19.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[7])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket.
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    if AMType == '4':   # AM1.5G: IEC Table 1
+        print('\nTesting for AM1.5G IEC 60904-9 Ed.3 Table 1')
+        lowerBounds = np.array((400, 500, 600, 700, 800, 900))
+        upperBounds = np.array((500, 600, 700, 800, 900, 1100))
+        ratios = np.array((18.4, 19.9, 18.4, 14.9, 12.5, 15.9))
+        stairsLO = ratios * 0.75
+        stairsHI = ratios * 1.25
+        binLabels = ['400-500', '500-600', '600-700', '700-800', '800-900', '900-1100']
+        
+        # Ensure that there is enough data to fulfill standard requirements.
+        if interpWaves[-1] < upperBounds[5]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5G classification under IEC 60904-9, Table 1.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength range (400 - 1100 nm) required for AM1.5G classification under IEC 60904-9, Table 1.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[5])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket.
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    elif AMType == '5':     # AM1.5G: IEC Table 2
+        print('\nTesting for AM1.5G IEC 60904-9 Ed. 3 Table 2')
+        lowerBounds = np.array((300, 470, 561, 657, 772, 919))
+        upperBounds = np.array((470, 561, 657, 772, 919, 1200))
+        ratios = np.array((16.61, 16.74, 16.67, 16.63, 16.66, 16.69))
+        stairsLO = ratios * 0.75    # Class A lower bounds for stair plot
+        stairsHI = ratios * 1.25    # Class A upper bounds for stair plot
+        binLabels = ['300-470', '470-561', '561-657', '657-772', '772-919', '919-1200']
+        
+        # Ensure that there is enough data to fulfill standard requirements.
+        if interpWaves[-1] < upperBounds[5]:
+            print('Your data does not cover the complete wavelenth range (300 - 1200 nm) required for AM1.5G classification under IEC 60904-9, Table 2.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength range (300 - 1200 nm) required for AM1.5G classification under IEC 60904-9, Table 2.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[5])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket.
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    elif AMType == '6':     # AM1.5G, 700 - 1100 nm only
+        print('\nTesting for AM1.5G Hemispherical ASTM E927-19, Limited Range [700 - 1100 nm]')
+        lowerBounds = np.array((700, 800, 900))
+        upperBounds = np.array((800, 900, 1100))
+        ratios = np.array((34.4, 28.7, 36.9))
+        stairsLO = ratios * 0.75    # Class A lower bounds for stair plot
+        stairsHI = ratios * 1.25    # Class A upper bounds for stair plot
+        binLabels = ['700-800', '800-900', '900-1100']
+        
+        # Ensure that there is enough data to fulfill standard requirements.
+        if interpWaves[-1] < upperBounds[2]:
+            print('Your data does not cover the complete wavelength (700 - 1100) for this comparison.')
+            return
+        if interpWaves[0] > lowerBounds[0]:
+            print('Your data does not cover the complete wavelength (700 - 1100) for this comparison.')
+            return
+        
+        topLimit = np.where(interpWaves == upperBounds[2])[0][0]
+        lowLimit = np.where(interpWaves == lowerBounds[0])[0][0]
+        
+        # Sum the irradiance between the limits. This will only be used for % comparisons against itself, so we don't need to account for the change in number of data points due to interpolation.
+        irradSum = np.sum(interpIrrad[lowLimit:topLimit + 1])
+        
+        # Compare what % of the total irradiance falls into each wavelength bucket.
+        classLetters = []
+        percents = []
+        for bucket in np.arange(len(binLabels)):
+            topBucketLim = np.where(interpWaves == upperBounds[bucket])[0][0]
+            lowBucketLim = np.where(interpWaves == lowerBounds[bucket])[0][0]
+            buckSum = np.sum(interpIrrad[lowBucketLim:topBucketLim + 1])
+            percents.append(buckSum / irradSum * 100)
+            
+            # Record the spectral match classification for each bucket.
+            if percents[bucket] >= ratios[bucket] * 0.875 and percents[bucket] <= ratios[bucket] * 1.125:
+                classLetters.append('A+')
+            elif percents[bucket] >= ratios[bucket] * 0.75 and percents[bucket] <= ratios[bucket] * 1.25:
+                classLetters.append('A')
+            elif percents[bucket] >= ratios[bucket] * 0.6 and percents[bucket] <= ratios[bucket] * 1.4:
+                classLetters.append('B')
+            elif percents[bucket] >= ratios[bucket] * 0.4 and percents[bucket] <= ratios[bucket] * 2.0:
+                classLetters.append('C')
+            else:
+                classLetters.append('U')
+    
+    # Calculate the absolute error between the normalized measured spectrum and the reference spectrum (This was erroneously called the SPD in the original MATLAB script).
+    errorCheckWaves = np.round(np.arange(max(300, min(waves)), min(1200.1, max(waves) + 0.1), 0.1), 3)
+    errorCheckIrrad = interper(errorCheckWaves)
+    errorCheckInterper = interpolate.interp1d(specRef['Wavelengths'], refIrrad)
+    errorCheck = errorCheckInterper(errorCheckWaves)
+    errorCheckIrrad = errorCheckIrrad / sum(errorCheckIrrad) * sum(errorCheck)
+    absError = sum(abs(errorCheckIrrad - errorCheck)) / sum(errorCheck) * 100
+    
+    # Calculate the aggregate SPC
+    SPC_loop = np.zeros(len(errorCheckWaves))
+    for loop in np.arange(len(SPC_loop)):
+        if errorCheckIrrad[loop] > errorCheck[loop] * 0.1:
+            SPC_loop[loop] = errorCheck[loop]
+        else:
+            SPC_loop[loop] = 0
+    SPC = sum(SPC_loop) / sum(errorCheck) * 100
+    
+    # Generating Plots
+    # Instantiate some lists to fill in loops
+    midBounds = []
+    stepWaves = []
+    stepsLO = []
+    stepsHI = []
+    
+    # Build the bounds for the stair plot
+    for bound in np.arange(len(lowerBounds)):
+        midBounds.append(np.mean([lowerBounds[bound], upperBounds[bound]]))
+        stepWaves.append(lowerBounds[bound])
+        stepWaves.append(upperBounds[bound])
+        stepsLO.append(stairsLO[bound])
+        stepsLO.append(stairsLO[bound])
+        stepsHI.append(stairsHI[bound])
+        stepsHI.append(stairsHI[bound])
+    
+    # Set the wavelength bounds depending on the spectrum being matched to
+    if AMType == '1':
+        plt1x = np.arange(400, 1101, 1)
+        xLims = [400, 1100]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM1.5D'
+        AM = 'AM1.5D, ASTM E927-19'
+    elif AMType == '2':
+        plt1x = np.arange(400, 1101, 1)
+        xLims = [400, 1100]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM1.5G'
+        AM = 'AM1.5G, ASTM E927-19'
+    elif AMType == '3':
+        plt1x = np.arange(350, 1401, 1)
+        xLims = [350, 1400]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM0'
+        AM = 'AM0, ASTM E927-19'
+    elif AMType == '4':
+        plt1x = np.arange(300, 1101, 1)
+        xLims = [400, 1100]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM1.5G'
+        AM = 'AM1.5G, IEC Table 1'
+    elif AMType == '5':
+        plt1x = np.arange(300, 1201, 1)
+        xLims = [300, 1200]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM1.5G'
+        AM = 'AM1.5G, IEC Table 2'
+    elif AMType == '6':
+        plt1x = np.arange(700, 1101, 1)
+        xLims = [700, 1100]
+        stdLeg = 'ASTM G173-03 Reference Spectrum: AM1.5G'
+        AM = 'AM1.5G, ASTM E927-19'
+    
+    # Normalize the data to overlap with SMARTS standard data.
+    normFactor = errorCheckInterper(plt1x)
+    plotInterper = interpolate.interp1d(waves, irrad)
+    plt1y = plotInterper(plt1x)
+    plt1y = plt1y / sum(plt1y) * sum(normFactor)    # Normalize the data to overlap with SMARTS standard data
+    dataLabel = label
+    
+    # Subplots
+    ax1 = plt.subplot2grid((2, 2), (0, 0), colspan = 2)
+    ax2 = plt.subplot2grid((2, 2), (1, 0))
+    ax3 = plt.subplot2grid((2, 2), (1, 1))
+    
+    # Top plot
+    ax1.plot(specRef['Wavelengths'], refIrrad, label = stdLeg, lw = 0.5)
+    ax1.plot(plt1x, plt1y, c = 'k', label = dataLabel, lw = 0.5)
+    ax1.set_xlim(xLims)
+    ax1.set_xlabel('Wavelength [nm]', fontsize = 6)
+    ax1.set_ylabel(r'Spectral Irradiance [W/$cm^2$/nm]', fontsize = 6)
+    ax1.ticklabel_format(axis = 'y', style = 'sci', scilimits = (0, 0))
+    ax1.tick_params(axis = 'both', which = 'major', labelsize = 6)
+    ax1.yaxis.get_offset_text().set_fontsize(6)
+    ax1.legend(fontsize = 5)
+    ax1.set_title('Solar Simulator Spectral Comparison for ' + AM, weight = 'bold')
+    
+    # Bottom Left Plot
+    ax2.scatter(midBounds, percents, s = 10, c = 'k', label = dataLabel)
+    ax2.plot(stepWaves, stepsLO, 'r--', label = 'Lower Limit, Class A', lw = 0.5)
+    ax2.plot(stepWaves, stepsHI, 'b--', label = 'Upper Limit, Class A', lw = 0.5)
+    ax2.set_xlim(xLims)
+    ax2.set_xlabel('Wavelength [nm]', fontsize = 6)
+    ax2.set_ylabel('Ratio of Interval Irradiance [%]', fontsize = 6)
+    ax2.tick_params(axis = 'both', which = 'major', labelsize = 6)
+    ax2.legend(fontsize = 5)
+    ax2.set_title('Spectral Irradiance Ratios, Compared to ' + AM, weight = 'bold', fontsize = 5)
+    
+    # Bottom Right Table
+    percents[bucket] = np.around(percents[bucket], 2)   # round them to 2 decimal places
+    plotTable = {
+        'Wavelength Interval [nm]': binLabels,
+        'Ratio of Interval Irradiance [%]': np.round(percents, 2),
+        'Classification': classLetters
+        }
+    tableDF = pd.DataFrame(plotTable)
+    table = ax3.table(cellText = tableDF.values, colLabels = tableDF.columns, loc = 'center', cellLoc = 'center')
+    ax3.set_axis_off()
+    table.auto_set_font_size(False)
+    table.set_fontsize(5)
+    table.auto_set_column_width(col = list(range(len(tableDF.columns))))
+    plt.tight_layout()
+    plt.savefig("output/SM.png", dpi=300)
+    
+    # classification
+    grade_order = ['A+', 'A', 'B', 'C', 'D', 'U']
+    classification = max(classLetters, key=lambda g: grade_order.index(g))
+
+    saveCheck = rawdata
+    savePath = 'output'
+    print(saveCheck)
+    if saveCheck == True:
+        dataToSave = {
+            'Wavelengths [nm]': waves,
+            'Spectral Irradiance [W/cm^2/nm]': irrad
+            }
+        saveName = '\Spectral Irradiance Data.txt'
+        saveFrame = pd.DataFrame(dataToSave)
+        saveFrame.to_csv(savePath + saveName, sep = '\t', index = False)
+        print('Your irradiance data has been saved to ' + savePath + saveName + '.')
+    elif saveCheck == False:
+        print('Your irradiance data has not been saved.')
+
+    # Display a small inline summary table containing information for the test report.
+    if 'siData' in ssData and 'igaData' in ssData:
+        report_d = {
+            'Filename of Si Measurement': ssData['siData']['filename'],
+            'Date of Si Measurement': ssData['siData']['date'],
+            'Filename of InGaAs Measurement': ssData['igaData']['filename'],
+            'Date of InGaAs Measurement': ssData['igaData']['filename'],
+            'SPD Absolute Error [%]': round(absError, 4),
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification,
+            'df' : saveFrame
+            }
+    elif 'siData' in ssData:
+        report_d = {
+            'Filename of Si Measurement': ssData['siData']['filename'],
+            'Date of Si Measurement': ssData['siData']['date'],
+            'SPD Absolute Error [%]': round(absError, 4),
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification,
+            'df' : saveFrame
+            }
+    elif 'igaData' in ssData:
+        report_d = {
+            'Filename of InGaAs Measurement': ssData['igaData']['filename'],
+            'Date of InGaAs Measurement': ssData['igaData']['date'],
+            'SPD Absolute Error [%]': round(absError, 4),
+            'Aggregate SPC [%]': round(SPC, 4),
+            'Classification': classification,
+            'df' : saveFrame
+            }
+    resultsFrame = pd.DataFrame.from_dict(report_d, orient = 'index')
+    print(tabulate(resultsFrame, colalign = ('right',)))
+
+    return report_d
+
+
+
+def SMScript2(AMType, siData, label):
+    '''
+    specScript2: This function works with sidat file instead
+    '''
+
+    dir = os.path.abspath(os.path.dirname(__file__))
+    parent_dir = os.path.dirname(dir)
+    files = os.path.join(parent_dir, 'required_files')
+
+    
+    # Standard spectra file location. Currently given relative to the script's run location.
+    stdSpecPath = os.path.join(files, 'Solar_Standards.csv')
+    
+    # The main function starts here.
+    ssData = {}
+    print(siData)
+
+    waves = [float(w) for w in siData['wavelengths'][:-5]]
+    irrad = [float(i) for i in siData['irradiance'][:-5]]
+
+    # savePath = ssData['siData']['folder']
+
     # Import the reference spectra.
     specRef = pd.read_csv(
         stdSpecPath,
@@ -705,50 +1197,26 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, cro
     grade_order = ['A+', 'A', 'B', 'C', 'D', 'U']
     classification = max(classLetters, key=lambda g: grade_order.index(g))
 
-    # Display a small inline summary table containing information for the test report.
-    if 'siData' in ssData and 'igaData' in ssData:
-        report_d = {
-            'Filename of Si Measurement': ssData['siData']['filename'],
-            'Date of Si Measurement': ssData['siData']['date'],
-            'Filename of InGaAs Measurement': ssData['igaData']['filename'],
-            'Date of InGaAs Measurement': ssData['igaData']['filename'],
-            'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4),
-            'Classification': classification
-            }
-    elif 'siData' in ssData:
-        report_d = {
-            'Filename of Si Measurement': ssData['siData']['filename'],
-            'Date of Si Measurement': ssData['siData']['date'],
-            'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4),
-            'Classification': classification
-            }
-    elif 'igaData' in ssData:
-        report_d = {
-            'Filename of InGaAs Measurement': ssData['igaData']['filename'],
-            'Date of InGaAs Measurement': ssData['igaData']['date'],
-            'SPD Absolute Error [%]': round(absError, 4),
-            'Aggregate SPC [%]': round(SPC, 4),
-            'Classification': classification
-            }
-    resultsFrame = pd.DataFrame.from_dict(report_d, orient = 'index')
-    print(tabulate(resultsFrame, colalign = ('right',)))
-    
+    dataToSave = {
+        'Wavelengths [nm]': waves,
+        'Spectral Irradiance [W/m^2/nm]': irrad
+        }
+    saveFrame = pd.DataFrame(dataToSave)
 
-    saveCheck = rawdata
-    savePath = 'output'
-    print(saveCheck)
-    if saveCheck == True:
-        dataToSave = {
-            'Wavelengths [nm]': waves,
-            'Spectral Irradiance [W/cm^2/nm]': irrad
-            }
-        saveName = '\Spectral Irradiance Data.txt'
-        saveFrame = pd.DataFrame(dataToSave)
-        saveFrame.to_csv(savePath + saveName, sep = '\t', index = False)
-        print('Your irradiance data has been saved to ' + savePath + saveName + '.')
-    elif saveCheck == False:
-        print('Your irradiance data has not been saved.')
+    # Display a small inline summary table containing information for the test report.
+    report_d = {
+        # 'Filename of Si Measurement': ssData['siData']['filename'],
+        # 'Date of Si Measurement': ssData['siData']['date'],
+        # 'Filename of InGaAs Measurement': ssData['igaData']['filename'],
+        # 'Date of InGaAs Measurement': ssData['igaData']['filename'],
+        'SPD Absolute Error [%]': round(absError, 4),
+        'Aggregate SPC [%]': round(SPC, 4),
+        'Classification': classification,
+        'df': saveFrame
+        }
+
+    # resultsFrame = pd.DataFrame.from_dict(report_d, orient = 'index')
+    # print(tabulate(resultsFrame, colalign = ('right',)))
+
 
     return report_d

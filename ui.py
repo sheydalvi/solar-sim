@@ -57,31 +57,31 @@ col1, col2, col3 = st.columns(3)
 with col1:
     PN = st.text_input(
     "Project Number:",
-    "12345",
+    "",
     key="pn",
 )
 with col2:
     SN = st.text_input(
     "SciSun Serial Number:",
-    "0001234",
+    "",
     key="sn",
 )
 with col3:
     PS = st.text_input(
     "Power Supply Serial Number:",
-    "0001234",
+    "",
     key="ps",
 )
 with col1:
     user = st.text_input(
     "End User:",
-    "University of Western Ontario",
+    "",
     key="user",
 )
 with col2:
     Country = st.text_input(
     "End User Country:",
-    "Canada",
+    "",
     key="country",
 )
 with col3:
@@ -299,7 +299,7 @@ label = st.text_input(
 )
 
 
-
+uploaded_full = st.file_uploader("Upload .sidat file full", type=['sidat'], key='full')
 uploaded_Si = st.file_uploader("Upload .ssdat file Si", type=['ssdat'], key='Si')
 uploaded_IGA = st.file_uploader("Upload .ssdat file IGA", type=['ssdat'], key='IGA')
 
@@ -318,6 +318,21 @@ if uploaded_Si or uploaded_IGA:
 
     df = SM_report['df']
     csv_data_SM = df.to_csv(index=False).encode('utf-8')
+
+elif uploaded_full:
+    SM= 1
+    from core.SciImports import sidatImport
+    mes_date_sm = st.date_input("Enter the SM masurement date")
+    result= sidatImport(uploaded_full)
+    st.success("File successfully parsed.")
+
+
+
+    SM_report = SMScript2(AMType, result, label)
+    st.write("Results:", SM_report)
+
+    # df = SM_report['df']
+    # csv_data_SM = df.to_csv(index=False).encode('utf-8')
 else:
     st.error("SM file not uploaded")
 
@@ -471,26 +486,26 @@ if SM and TI and NU:
             run.add_picture("output/SM.png", width=Inches(7))
             break
 
-col111, col222, col333, col444 = st.columns(4)
-with col111:
-    if st.button("Generate Report"):
-        import io
-        # save to in-memory file
-        doc_io = io.BytesIO()
-        doc.save(doc_io)
-        doc_io.seek(0)
+    col111, col222, col333, col444 = st.columns(4)
+    with col111:
+        if st.button("Generate Report"):
+            import io
+            # save to in-memory file
+            doc_io = io.BytesIO()
+            doc.save(doc_io)
+            doc_io.seek(0)
 
-        st.download_button(
-            label="Download Report as .docx",
-            data=doc_io,
-            file_name=f"TR-SCISUN-01 E927-19 [ProjectNo{PN} SN{SN}].docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+            st.download_button(
+                label="Download Report as .docx",
+                data=doc_io,
+                file_name=f"TR-SCISUN-01 E927-19 [ProjectNo{PN} SN{SN}].docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            )
 
-with col222:
-    # generate and download and  your files
-    st.download_button("Download NU file", data=csv_bytes_NU, file_name=f"SpatialUniformityData_ProjectNo{PN}SN{SN}.csv")
-with col333:
-    st.download_button("Download TI file", data=csv_bytes_TI, file_name=f"TemporalInstabilityData_ProjectNo{PN}SN{SN}.csv")
-with col444:
-    st.download_button("Download SM file", data=csv_data_SM, file_name=f"SpectralMatchData_ProjectNo{PN}SN{SN}.csv")
+    with col222:
+        # generate and download and  your files
+        st.download_button("Download NU file", data=csv_bytes_NU, file_name=f"SpatialUniformityData_ProjectNo{PN}SN{SN}.csv")
+    with col333:
+        st.download_button("Download TI file", data=csv_bytes_TI, file_name=f"TemporalInstabilityData_ProjectNo{PN}SN{SN}.csv")
+    with col444:
+        st.download_button("Download SM file", data=csv_data_SM, file_name=f"SpectralMatchData_ProjectNo{PN}SN{SN}.csv")
