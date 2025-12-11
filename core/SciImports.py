@@ -138,7 +138,6 @@ def ssdatImport(uploaded_file):
         'startWave': headerData['Values'][7],
         'stopWave': headerData['Values'][8],
         'stepSize': headerData['Values'][9],
-        'folder': ''  # Not available in Streamlit context
     }
 
     print(theDictionary['filename'] + ' has been successfully imported.')
