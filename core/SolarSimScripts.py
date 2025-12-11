@@ -759,7 +759,7 @@ def SMScript(status_Si, status_IGA, AMType, SiData, IGAData, label, rawdata, cro
 
 
 
-def SMScript2(AMType, siData, label):
+def SMScript2(AMType, fullData, label):
     '''
     specScript2: This function works with sidat file instead
     '''
@@ -773,13 +773,11 @@ def SMScript2(AMType, siData, label):
     stdSpecPath = os.path.join(files, 'Solar_Standards.csv')
     
     # The main function starts here.
-    ssData = {}
-    print(siData)
+    print(fullData)
 
-    waves = [float(w) for w in siData['wavelengths'][:-5]]
-    irrad = [float(i) for i in siData['irradiance'][:-5]]
+    waves = [float(w) for w in fullData['wavelengths'][:-5]]
+    irrad = [float(i) for i in fullData['irradiance'][:-5]]
 
-    # savePath = ssData['siData']['folder']
 
     # Import the reference spectra.
     specRef = pd.read_csv(
@@ -1196,7 +1194,6 @@ def SMScript2(AMType, siData, label):
     # classification
     grade_order = ['A+', 'A', 'B', 'C', 'D', 'U']
     classification = max(classLetters, key=lambda g: grade_order.index(g))
-
     dataToSave = {
         'Wavelengths [nm]': waves,
         'Spectral Irradiance [W/m^2/nm]': irrad
@@ -1205,18 +1202,9 @@ def SMScript2(AMType, siData, label):
 
     # Display a small inline summary table containing information for the test report.
     report_d = {
-        # 'Filename of Si Measurement': ssData['siData']['filename'],
-        # 'Date of Si Measurement': ssData['siData']['date'],
-        # 'Filename of InGaAs Measurement': ssData['igaData']['filename'],
-        # 'Date of InGaAs Measurement': ssData['igaData']['filename'],
         'SPD Absolute Error [%]': round(absError, 4),
         'Aggregate SPC [%]': round(SPC, 4),
         'Classification': classification,
         'df': saveFrame
         }
-
-    # resultsFrame = pd.DataFrame.from_dict(report_d, orient = 'index')
-    # print(tabulate(resultsFrame, colalign = ('right',)))
-
-
     return report_d

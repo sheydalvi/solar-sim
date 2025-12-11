@@ -300,26 +300,26 @@ label = st.text_input(
 
 
 uploaded_full = st.file_uploader("Upload .sidat file full", type=['sidat'], key='full')
-uploaded_Si = st.file_uploader("Upload .ssdat file Si", type=['ssdat'], key='Si')
-uploaded_IGA = st.file_uploader("Upload .ssdat file IGA", type=['ssdat'], key='IGA')
+# uploaded_Si = st.file_uploader("Upload .ssdat file Si", type=['ssdat'], key='Si')
+# uploaded_IGA = st.file_uploader("Upload .ssdat file IGA", type=['ssdat'], key='IGA')
 
-if uploaded_Si or uploaded_IGA:
-    SM= 1
-    from core.SciImports import ssdatImport
-    mes_date_sm = st.date_input("Enter the SM masurement date")
-    result_Si = ssdatImport(uploaded_Si)
-    result_IGA = ssdatImport(uploaded_IGA)
-    st.success("File successfully parsed.")
+# if uploaded_Si or uploaded_IGA:
+#     SM= 1
+#     from core.SciImports import ssdatImport
+#     mes_date_sm = st.date_input("Enter the SM masurement date")
+#     result_Si = ssdatImport(uploaded_Si)
+#     result_IGA = ssdatImport(uploaded_IGA)
+#     st.success("File successfully parsed.")
 
 
 
-    SM_report = SMScript(status_Si, status_IGA, AMType, result_Si, result_IGA, label, crosspoint)
-    st.write("Results:", SM_report)
+#     SM_report = SMScript(status_Si, status_IGA, AMType, result_Si, result_IGA, label, crosspoint)
+#     st.write("Results:", SM_report)
 
-    df = SM_report['df']
-    csv_data_SM = df.to_csv(index=False).encode('utf-8')
+#     df = SM_report['df']
+#     csv_data_SM = df.to_csv(index=False).encode('utf-8')
 
-elif uploaded_full:
+if uploaded_full:
     SM= 1
     from core.SciImports import sidatImport
     mes_date_sm = st.date_input("Enter the SM masurement date")
@@ -331,8 +331,8 @@ elif uploaded_full:
     SM_report = SMScript2(AMType, result, label)
     st.write("Results:", SM_report)
 
-    # df = SM_report['df']
-    # csv_data_SM = df.to_csv(index=False).encode('utf-8')
+    df = SM_report['df']
+    csv_data_SM = df.to_csv(index=False).encode('utf-8')
 else:
     st.error("SM file not uploaded")
 
