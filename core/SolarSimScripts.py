@@ -806,7 +806,7 @@ def SMScript2(AMType, fullData, label):
     
     # Interpolate the collected data so it has the same resolution as the reference spectrum (1 nm steps)
     interpWaves = np.round(np.arange(round(min(waves), 1), round(max(waves), 1) + 0.1, 0.1), 3)
-    interper = interpolate.interp1d(waves, irrad)
+    interper = interpolate.interp1d(waves, irrad, bounds_error=False, fill_value="extrapolate")
     interpIrrad = interper(interpWaves)
     
     # Load the ASTM wavelength bins and intensity percentage, depending on the reference spectrum.

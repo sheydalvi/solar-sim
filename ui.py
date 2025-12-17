@@ -250,19 +250,6 @@ else:
 # --- SM ---
 st.header("Spectrometry Analysis")
 
-
-silicons = {
-    "Si Low Gain": '2',
-    "Si High Gain": '1',
-    "No Si": '3'
-}
-
-igas = {
-    "No IGA": '3',
-    "IGA Low Gain": '2',
-    "IGA High Gain": '1',
-}
-
 standards = {
     "AM1.5G Hemispherical ASTM E927-19": '2',
     "AM1.5D Direct Normal ASTM E927-19": '1',
@@ -273,23 +260,10 @@ standards = {
 }
 
 
-col11, col22 = st.columns(2)
+col11, col22 = st.columns(2) 
 with col11:
-    user_si = st.selectbox("Silicon:", list(silicons.keys()))
-    status_Si = silicons[user_si]
-with col11:
-    user_iga = st.selectbox("IGA:", list(igas.keys()))
-    status_IGA = igas[user_iga]    
-with col22:
     user_am = st.selectbox("The Standard:", list(standards.keys()))
     AMType = standards[user_am]  
-
-with col22:
-    crosspoint = st.text_input(
-        "Crosspoint:",
-        "1100",
-        key="cross",
-    )
 
 
 label = st.text_input(
@@ -300,24 +274,7 @@ label = st.text_input(
 
 
 uploaded_full = st.file_uploader("Upload .sidat file full", type=['sidat'], key='full')
-# uploaded_Si = st.file_uploader("Upload .ssdat file Si", type=['ssdat'], key='Si')
-# uploaded_IGA = st.file_uploader("Upload .ssdat file IGA", type=['ssdat'], key='IGA')
 
-# if uploaded_Si or uploaded_IGA:
-#     SM= 1
-#     from core.SciImports import ssdatImport
-#     mes_date_sm = st.date_input("Enter the SM masurement date")
-#     result_Si = ssdatImport(uploaded_Si)
-#     result_IGA = ssdatImport(uploaded_IGA)
-#     st.success("File successfully parsed.")
-
-
-
-#     SM_report = SMScript(status_Si, status_IGA, AMType, result_Si, result_IGA, label, crosspoint)
-#     st.write("Results:", SM_report)
-
-#     df = SM_report['df']
-#     csv_data_SM = df.to_csv(index=False).encode('utf-8')
 
 if uploaded_full:
     SM= 1
