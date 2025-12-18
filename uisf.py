@@ -216,18 +216,6 @@ else:
 st.header("Spectrometry Analysis")
 
 
-silicons = {
-    "Si Low Gain": '2',
-    "Si High Gain": '1',
-    "No Si": '3'
-}
-
-igas = {
-    "No IGA": '3',
-    "IGA Low Gain": '2',
-    "IGA High Gain": '1',
-}
-
 standards = {
     "AM1.5G Hemispherical ASTM E927-19": '2',
     "AM1.5D Direct Normal ASTM E927-19": '1',
@@ -240,26 +228,13 @@ standards = {
 
 col11, col22 = st.columns(2)
 with col11:
-    user_si = st.selectbox("Silicon:", list(silicons.keys()))
-    status_Si = silicons[user_si]
-with col11:
-    user_iga = st.selectbox("IGA:", list(igas.keys()))
-    status_IGA = igas[user_iga]    
-with col22:
     user_am = st.selectbox("The Standard:", list(standards.keys()))
     AMType = standards[user_am]  
-
-with col22:
-    crosspoint = st.text_input(
-        "Crosspoint:",
-        "1100",
-        key="cross",
-    )
 
 
 label = st.text_input(
     "Label the data for the plot:",
-    "SciSun300 SN0001234",
+    "SF300 SN0001234",
     key="label",
 )
 
@@ -276,11 +251,10 @@ if uploaded_full:
     st.success("File successfully parsed.")
 
 
-
     SM_report = SMScript2(AMType, result, label)
     st.write("Results:", SM_report)
 
-    df = SM_report['df']
+    # df = SM_report['df']
     csv_data_SM = df.to_csv(index=False).encode('utf-8')
 else:
     st.error("SM file not uploaded")
@@ -384,7 +358,7 @@ if SM and TI and NU:
             
             # insert image right after the current paragraph
             run = para.insert_paragraph_before().add_run()
-            run.add_picture("output/NU.png", width=Inches(7))
+            run.add_picture("output/NUbar.png", width=Inches(7))
             break
 
 

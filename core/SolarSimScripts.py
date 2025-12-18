@@ -104,6 +104,7 @@ def NUScript(nuData):
         
         report_d = {
             'Filename': nuData['filename'],
+            'Number of Measurement Points': len(nuData['Xs']),
             'Date of Measurement': nuData['date'],
             'Target Area Diameter [cm]': statistics.mean([np.max(nuData['Xs']) - np.min(nuData['Xs']), np.max(nuData['Ys']) - np.min(nuData['Ys'])]),
             'Ideal Detector Area [cm^2]': nuData['detArea'],

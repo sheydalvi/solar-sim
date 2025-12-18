@@ -178,6 +178,7 @@ def sidatImport(uploaded_file):
 
     # Build the dictionary to return
     theDictionary = {
+        'test' : 'test',
         'wavelengths': fileData['Wavelength(nm)'],
         'signal': fileData['Signal(V)'],
         'transfer function' : fileData['Transfer_Function(W/m2/nm/V)'],
@@ -189,9 +190,9 @@ def sidatImport(uploaded_file):
         'filename': headerData['Values'][0],
         'date': headerData['Values'][1],
         'monoModel': headerData['Values'][5],
-        'startWave': headerData['Values'][7],
-        'stopWave': headerData['Values'][8],
-        'stepSize': headerData['Values'][9],
+        'startWave': headerData['Values'][8],
+        'stopWave': headerData['Values'][9],
+        'stepSize': headerData['Values'][10],
     }
 
     print(theDictionary['filename'] + ' has been successfully imported.')
