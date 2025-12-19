@@ -421,7 +421,7 @@ if SM and TI and NU:
             st.download_button(
                 label="Download Report as .docx",
                 data=doc_io,
-                file_name=f"TR-SCISUN-01 E927-19 [ProjectNo{PN} SN{SN}].docx",
+                file_name=f"TR-SF-01 E927-10 [ProjectNo{PN} SN{SN}].docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 
